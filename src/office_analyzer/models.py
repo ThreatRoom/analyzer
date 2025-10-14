@@ -73,6 +73,22 @@ class EmbeddedObject:
 
 
 @dataclass
+class OLEObjectInfo:
+    """Information about OLE objects found in Office files."""
+
+    section_id: str
+    section_name: str
+    section_size: int
+    object_type: str
+    content_type: Optional[str] = None
+    is_macro: bool = False
+    is_embedded_file: bool = False
+    hash_sha256: Optional[str] = None
+    hash_md5: Optional[str] = None
+    suspicious_content: List[str] = field(default_factory=list)
+
+
+@dataclass
 class MacroInfo:
     """VBA/VBS macro information."""
 
@@ -80,10 +96,17 @@ class MacroInfo:
     content: str
     hash_sha256: str
     hash_md5: str
+    macro_type: str = "VBA"  # VBA, VBScript, etc.
     entry_point: bool = False
     auto_execution: bool = False
     obfuscation_score: int = 0  # 0-10
     suspicious_apis: List[str] = field(default_factory=list)
+    obfuscation_techniques: List[str] = field(default_factory=list)
+    suspicious_strings: List[str] = field(default_factory=list)
+    hex_strings: List[str] = field(default_factory=list)
+    base64_strings: List[str] = field(default_factory=list)
+    line_count: int = 0
+    complexity_score: int = 0  # 0-10 for code complexity
     techniques: Dict[str, bool] = field(default_factory=dict)
     deobfuscated_payload: Optional[str] = None
 
@@ -121,8 +144,9 @@ class AnalysisResult:
     # Network Indicators
     network_indicators: NetworkIndicator
 
-    # Embedded Objects
+    # Embedded Objects and OLE Analysis
     embedded_objects: List[EmbeddedObject] = field(default_factory=list)
+    ole_objects: List[OLEObjectInfo] = field(default_factory=list)
     macros: List[MacroInfo] = field(default_factory=list)
     auto_execution: bool = False
     external_references: List[Dict[str, Any]] = field(default_factory=list)

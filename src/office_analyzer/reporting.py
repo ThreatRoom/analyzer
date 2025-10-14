@@ -50,13 +50,18 @@ class ReportGenerator:
         report_lines.extend(self._generate_network_section(result))
         report_lines.append("")
 
+        # OLE Objects Analysis
+        if result.ole_objects:
+            report_lines.extend(self._generate_ole_section(result))
+            report_lines.append("")
+
         # Embedded Objects
         report_lines.extend(self._generate_objects_section(result))
         report_lines.append("")
 
         # VBA/VBS Macro Analysis
         if result.macros:
-            report_lines.extend(self._generate_macro_section(result))
+            report_lines.extend(self._generate_enhanced_macro_section(result))
             report_lines.append("")
 
         # Indicators of Compromise
@@ -227,6 +232,142 @@ class ReportGenerator:
                 lines.append(f"  - {hidden}")
         else:
             lines.append("Hidden content: None")
+
+        return lines
+
+    def _generate_ole_section(self, result: AnalysisResult) -> list:
+        """Generate OLE objects analysis section."""
+        lines = []
+        lines.append("OLE OBJECTS ANALYSIS")
+        lines.append("-" * 40)
+
+        if not result.ole_objects:
+            lines.append("No OLE objects found.")
+            return lines
+
+        lines.append(f"Total OLE Objects Found: {len(result.ole_objects)}")
+        lines.append("")
+
+        # Group by object type
+        ole_groups = {}
+        for ole_obj in result.ole_objects:
+            obj_type = ole_obj.object_type
+            if obj_type not in ole_groups:
+                ole_groups[obj_type] = []
+            ole_groups[obj_type].append(ole_obj)
+
+        for obj_type, objects in ole_groups.items():
+            lines.append(f"{obj_type} Objects ({len(objects)}):")
+            for ole_obj in objects:
+                lines.append(f"  • Section: {ole_obj.section_name}")
+                lines.append(f"    ID: {ole_obj.section_id}")
+                lines.append(f"    Size: {ole_obj.section_size:,} bytes")
+                if ole_obj.content_type:
+                    lines.append(f"    Content Type: {ole_obj.content_type}")
+                if ole_obj.is_macro:
+                    lines.append("    ⚠️  Contains Macro Code")
+                if ole_obj.is_embedded_file:
+                    lines.append("    📄 Contains Embedded File")
+                if ole_obj.hash_sha256:
+                    lines.append(f"    SHA256: {ole_obj.hash_sha256}")
+
+                if ole_obj.suspicious_content:
+                    lines.append("    🚨 Suspicious Content:")
+                    for content in ole_obj.suspicious_content:
+                        lines.append(f"      - {content}")
+                lines.append("")
+
+        return lines
+
+    def _generate_enhanced_macro_section(self, result: AnalysisResult) -> list:
+        """Generate enhanced VBA/VBS macro analysis section."""
+        lines = []
+        lines.append("ENHANCED VBA/VBS MACRO ANALYSIS")
+        lines.append("-" * 40)
+
+        for macro in result.macros:
+            lines.append(f"Macro: {macro.name}")
+            lines.append(f"Type: {macro.macro_type}")
+            lines.append(f"Lines of Code: {macro.line_count}")
+            lines.append(f"Obfuscation Score: {macro.obfuscation_score}/10")
+            lines.append(f"Complexity Score: {macro.complexity_score}/10")
+
+            # Risk indicators
+            risk_level = "🔴 HIGH RISK" if macro.obfuscation_score >= 7 else \
+                        "🟡 MEDIUM RISK" if macro.obfuscation_score >= 4 else \
+                        "🟢 LOW RISK"
+            lines.append(f"Risk Level: {risk_level}")
+            lines.append("")
+
+            # Auto-execution
+            lines.append(f"Auto-execution: {'🚨 YES' if macro.auto_execution else '✅ No'}")
+            if macro.auto_execution:
+                lines.append("  ⚠️  This macro will execute automatically when the document is opened")
+            lines.append("")
+
+            # Suspicious APIs
+            if macro.suspicious_apis:
+                lines.append("🚨 Suspicious APIs Detected:")
+                for api in macro.suspicious_apis:
+                    lines.append(f"  - {api}")
+                lines.append("")
+
+            # Obfuscation techniques
+            if macro.obfuscation_techniques:
+                lines.append("🔍 Obfuscation Techniques:")
+                for technique in macro.obfuscation_techniques:
+                    lines.append(f"  - {technique.replace('_', ' ').title()}")
+                lines.append("")
+
+            # Suspicious strings
+            if macro.suspicious_strings:
+                lines.append("🚨 Suspicious Strings:")
+                for string in macro.suspicious_strings[:5]:  # Limit display
+                    lines.append(f"  - {string}")
+                if len(macro.suspicious_strings) > 5:
+                    lines.append(f"  ... and {len(macro.suspicious_strings) - 5} more")
+                lines.append("")
+
+            # Hex/Base64 strings
+            if macro.hex_strings:
+                lines.append(f"🔢 Hex Strings Found: {len(macro.hex_strings)}")
+                for hex_str in macro.hex_strings[:3]:
+                    lines.append(f"  - {hex_str}")
+                if len(macro.hex_strings) > 3:
+                    lines.append(f"  ... and {len(macro.hex_strings) - 3} more")
+                lines.append("")
+
+            if macro.base64_strings:
+                lines.append(f"📝 Base64 Strings Found: {len(macro.base64_strings)}")
+                for b64_str in macro.base64_strings[:3]:
+                    lines.append(f"  - {b64_str[:50]}...")
+                if len(macro.base64_strings) > 3:
+                    lines.append(f"  ... and {len(macro.base64_strings) - 3} more")
+                lines.append("")
+
+            # Advanced techniques detected
+            lines.append("🔬 Advanced Techniques Analysis:")
+            critical_techniques = ['process_injection', 'privilege_escalation', 'persistence', 'lateral_movement']
+            high_risk_techniques = ['dynamic_execution', 'anti_analysis', 'network_activity']
+
+            for technique, detected in macro.techniques.items():
+                if detected:
+                    emoji = "🚨" if technique in critical_techniques else \
+                           "⚠️" if technique in high_risk_techniques else "🔍"
+                    technique_name = technique.replace("_", " ").title()
+                    lines.append(f"  {emoji} {technique_name}: YES")
+
+            lines.append("")
+
+            # Deobfuscated payload
+            if macro.deobfuscated_payload:
+                lines.append("🔓 Deobfuscated Payload:")
+                lines.append(f"  {macro.deobfuscated_payload}")
+                lines.append("")
+
+            lines.append(f"SHA256: {macro.hash_sha256}")
+            lines.append("=" * 60)
+            lines.append("")
 
         return lines
 

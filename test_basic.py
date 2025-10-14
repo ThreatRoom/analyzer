@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from office_analyzer import OfficeAnalyzer
 from office_analyzer.reporting import ReportGenerator
+from office_analyzer.extractors.ole_extractor import EnhancedOLEExtractor
 
 
 def create_simple_docx():
@@ -130,6 +131,58 @@ def test_basic_analysis():
         traceback.print_exc()
         return False
 
+    finally:
+        # Clean up
+        try:
+            Path(test_file).unlink()
+        except Exception:
+            pass
+
+
+def test_enhanced_ole_extraction():
+    """Test enhanced OLE extraction functionality."""
+    print("\nTesting enhanced OLE extraction...")
+    test_file = create_simple_docx()
+
+    try:
+        # Initialize enhanced OLE extractor
+        extractor = EnhancedOLEExtractor()
+        
+        # Test OLE object extraction
+        ole_objects = extractor.extract_ole_objects(test_file)
+        print(f"   - Found {len(ole_objects)} OLE objects")
+        
+        # Test enhanced macro extraction (should be empty for clean file)
+        macros = extractor.extract_enhanced_macros(test_file)
+        print(f"   - Found {len(macros)} macros")
+        
+        # Test with analyzer integration
+        analyzer = OfficeAnalyzer(enable_network_checks=False)
+        result = analyzer.analyze_file(test_file)
+        
+        # Verify enhanced features are present
+        assert hasattr(result, 'ole_objects'), "Result should have ole_objects attribute"
+        assert isinstance(result.ole_objects, list), "ole_objects should be a list"
+        
+        # Check for enhanced macro fields
+        for macro in result.macros:
+            assert hasattr(macro, 'macro_type'), "Macro should have macro_type"
+            assert hasattr(macro, 'obfuscation_score'), "Macro should have obfuscation_score"
+            assert hasattr(macro, 'complexity_score'), "Macro should have complexity_score"
+            assert hasattr(macro, 'obfuscation_techniques'), "Macro should have obfuscation_techniques"
+            assert hasattr(macro, 'suspicious_strings'), "Macro should have suspicious_strings"
+            assert hasattr(macro, 'hex_strings'), "Macro should have hex_strings"
+            assert hasattr(macro, 'base64_strings'), "Macro should have base64_strings"
+        
+        print("✅ Enhanced OLE extraction test passed!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Enhanced OLE extraction test failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
+        
     finally:
         # Clean up
         try:
@@ -260,6 +313,10 @@ if __name__ == "__main__":
 
     # Test basic analysis
     if not test_basic_analysis():
+        success = False
+
+    # Test enhanced OLE extraction
+    if not test_enhanced_ole_extraction():
         success = False
 
     # Test CLI interface
