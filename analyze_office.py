@@ -43,9 +43,15 @@ Supported formats:
     parser.add_argument(
         "--output-format",
         "-f",
-        choices=["text", "json"],
+        choices=["text", "json", "html"],
         default="text",
         help="Output format for the report (default: text)",
+    )
+
+    parser.add_argument(
+        "--html-report",
+        help="Generate HTML report and save to specified file path",
+        metavar="FILE",
     )
 
     parser.add_argument("--no-network", action="store_true", help="Disable network-based checks and reputation lookups")
@@ -91,17 +97,33 @@ Supported formats:
         # Generate report
         reporter = ReportGenerator()
 
+        # Handle HTML report option
+        if args.html_report:
+            html_path = Path(args.html_report)
+            reporter.save_html_report(result, str(html_path))
+            print(f"HTML report saved to: {html_path}")
+
+            # If HTML report was requested, don't output to stdout unless explicitly asked
+            if not args.output and args.output_format == "text":
+                print("\nFor text/JSON output, use --output or --output-format options")
+
+        # Generate standard report
         if args.output_format == "json":
             report_content = reporter.generate_json_report(result)
+        elif args.output_format == "html":
+            report_content = reporter.generate_html_report(result)
         else:
             report_content = reporter.generate_detailed_report(result)
 
-        # Output report
+        # Output standard report
         if args.output:
             output_path = Path(args.output)
-            reporter.save_report(result, str(output_path), args.output_format)
+            if args.output_format == "html":
+                reporter.save_html_report(result, str(output_path))
+            else:
+                reporter.save_report(result, str(output_path), args.output_format)
             print(f"Report saved to: {output_path}")
-        else:
+        elif not args.html_report:  # Only print to stdout if no HTML report was generated
             print(report_content)
 
         # Print warnings/errors if any

@@ -50,8 +50,8 @@ def create_simple_docx():
 
             # Add core properties
             core_xml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" 
-                   xmlns:dc="http://purl.org/dc/elements/1.1/" 
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+                   xmlns:dc="http://purl.org/dc/elements/1.1/"
                    xmlns:dcterms="http://purl.org/dc/terms/">
     <dc:title>Test Document</dc:title>
     <dc:subject>Testing</dc:subject>
@@ -180,6 +180,78 @@ def test_cli_interface():
             pass
 
 
+def test_html_report():
+    """Test HTML report generation."""
+    print("\\nTesting HTML report generation...")
+    test_file = create_simple_docx()
+
+    try:
+        import subprocess
+        import os
+
+        test_html_file = "/tmp/test_report.html"
+
+        # Test HTML report generation via CLI
+        result = subprocess.run([
+            sys.executable, "analyze_office.py", test_file,
+            "--html-report", test_html_file, "--no-network"
+        ], capture_output=True, text=True, timeout=30)
+
+        if result.returncode == 0 and os.path.exists(test_html_file):
+            # Check if HTML file contains expected content
+            with open(test_html_file, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+
+            expected_elements = [
+                "<!DOCTYPE html>",
+                "Office File Analyzer",
+                "Threat Level:",
+                "Risk Score:",
+                "File Information",
+                "Document Metadata",
+                "Network Indicators",
+                "VBA/VBS Macro Analysis",
+                "Indicators of Compromise"
+            ]
+
+            missing_elements = [elem for elem in expected_elements if elem not in html_content]
+
+            if not missing_elements:
+                print("✅ HTML report generation test passed!")
+                print(f"   - HTML report created: {test_html_file}")
+                print(f"   - File size: {os.path.getsize(test_html_file):,} bytes")
+                print("   - Contains all expected sections")
+
+                # Clean up
+                os.remove(test_html_file)
+                return True
+            else:
+                print(f"❌ HTML report test failed: Missing elements: {missing_elements}")
+                return False
+        else:
+            print(f"❌ HTML report test failed: Return code {result.returncode}")
+            if result.stderr:
+                print(f"   Error: {result.stderr}")
+            return False
+
+    except Exception as e:
+        print(f"❌ HTML report test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+    finally:
+        # Clean up
+        try:
+            Path(test_file).unlink()
+        except Exception:
+            pass
+        try:
+            os.remove("/tmp/test_report.html")
+        except Exception:
+            pass
+
+
 if __name__ == "__main__":
     print("Running basic functionality tests...")
     print("=" * 50)
@@ -192,6 +264,9 @@ if __name__ == "__main__":
 
     # Test CLI interface
     if not test_cli_interface():
+        success = False
+
+    if not test_html_report():
         success = False
 
     print("\n" + "=" * 50)
