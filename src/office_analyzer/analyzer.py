@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .models import AnalysisResult, ThreatLevel, RiskScore, FileMetadata
 from .extractors import MetadataExtractor, MacroExtractor, NetworkExtractor, ObjectExtractor
+from .extractors.ole_extractor import EnhancedOLEExtractor
 from .scoring import RiskScorer
 from .utils import calculate_entropy, get_file_hashes
 
@@ -37,6 +38,7 @@ class OfficeAnalyzer:
         self.macro_extractor = MacroExtractor()
         self.network_extractor = NetworkExtractor(enable_network_checks)
         self.object_extractor = ObjectExtractor()
+        self.ole_extractor = EnhancedOLEExtractor()
 
         # Initialize risk scorer
         self.risk_scorer = RiskScorer()
@@ -89,8 +91,17 @@ class OfficeAnalyzer:
             # Extract metadata
             result.metadata = self.metadata_extractor.extract(str(file_path))
 
-            # Extract macros
-            result.macros = self.macro_extractor.extract(str(file_path))
+            # Extract OLE objects with enhanced analysis
+            result.ole_objects = self.ole_extractor.extract_ole_objects(str(file_path))
+            
+            # Extract macros with enhanced analysis (replaces basic macro extraction)
+            enhanced_macros = self.ole_extractor.extract_enhanced_macros(str(file_path))
+            if enhanced_macros:
+                result.macros = enhanced_macros
+            else:
+                # Fallback to basic macro extraction
+                result.macros = self.macro_extractor.extract(str(file_path))
+            
             result.auto_execution = any(macro.auto_execution for macro in result.macros)
 
             # Extract network indicators

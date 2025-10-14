@@ -39,8 +39,14 @@ class RiskScorer:
         score = 0
         iocs = []
 
-        # Macro-based scoring
-        macro_score, macro_factors, macro_iocs = self._score_macros(analysis_result)
+        # OLE objects scoring (new enhanced analysis)
+        ole_score, ole_factors, ole_iocs = self._score_ole_objects(analysis_result)
+        score += ole_score
+        risk_factors.extend(ole_factors)
+        iocs.extend(ole_iocs)
+
+        # Enhanced macro-based scoring
+        macro_score, macro_factors, macro_iocs = self._score_enhanced_macros(analysis_result)
         score += macro_score
         risk_factors.extend(macro_factors)
         iocs.extend(macro_iocs)
@@ -85,6 +91,195 @@ class RiskScorer:
             classification=classification,
             iocs=iocs,
         )
+
+    def _score_ole_objects(self, result: AnalysisResult) -> tuple:
+        """Score OLE objects for security risks."""
+        score = 0
+        factors = []
+        iocs = []
+
+        if not result.ole_objects:
+            return score, factors, iocs
+
+        # Basic OLE object presence
+        score += min(len(result.ole_objects) * 2, 10)
+        factors.append(f"{len(result.ole_objects)} OLE objects found")
+
+        for ole_obj in result.ole_objects:
+            # Macro-containing OLE objects are high risk
+            if ole_obj.is_macro:
+                score += 15
+                factors.append(f"OLE object contains macro: {ole_obj.section_name}")
+                iocs.append(
+                    IoC(
+                        ioc_type="ole_macro",
+                        value=ole_obj.hash_sha256 or ole_obj.section_id,
+                        description=f"OLE object with macro code: {ole_obj.section_name}",
+                        confidence=0.9,
+                    )
+                )
+
+            # Embedded files in OLE objects
+            if ole_obj.is_embedded_file:
+                score += 10
+                factors.append(f"Embedded file in OLE: {ole_obj.section_name}")
+                if ole_obj.hash_sha256:
+                    iocs.append(
+                        IoC(
+                            ioc_type="embedded_file",
+                            value=ole_obj.hash_sha256,
+                            description=f"Embedded file hash: {ole_obj.section_name}",
+                            confidence=0.8,
+                        )
+                    )
+
+            # Suspicious content in OLE objects
+            if ole_obj.suspicious_content:
+                susp_score = min(len(ole_obj.suspicious_content) * 3, 15)
+                score += susp_score
+                factors.append(f"Suspicious content in OLE {ole_obj.section_name}: {len(ole_obj.suspicious_content)} indicators")
+
+                for content in ole_obj.suspicious_content:
+                    if "Suspicious API" in content:
+                        iocs.append(
+                            IoC(
+                                ioc_type="suspicious_api",
+                                value=content,
+                                description=f"Suspicious API in OLE object {ole_obj.section_name}",
+                                confidence=0.7,
+                            )
+                        )
+
+            # Large OLE objects can be suspicious
+            if ole_obj.section_size > 100000:  # > 100KB
+                score += 5
+                factors.append(f"Large OLE object: {ole_obj.section_name} ({ole_obj.section_size:,} bytes)")
+
+        return score, factors, iocs
+
+    def _score_enhanced_macros(self, result: AnalysisResult) -> tuple:
+        """Score enhanced macro analysis results."""
+        score = 0
+        factors = []
+        iocs = []
+
+        if not result.macros:
+            return score, factors, iocs
+
+        for macro in result.macros:
+            # Auto-execution macros are high risk
+            if macro.auto_execution:
+                score += 30
+                factors.append(f"Auto-executing macro: {macro.name}")
+                iocs.append(
+                    IoC(
+                        ioc_type="macro",
+                        value=macro.name,
+                        description="Auto-executing VBA macro",
+                        confidence=0.9,
+                    )
+                )
+
+            # Enhanced obfuscation scoring
+            if macro.obfuscation_score > 7:
+                score += 25
+                factors.append(f"Highly obfuscated macro {macro.name} (score: {macro.obfuscation_score}/10)")
+            elif macro.obfuscation_score > 4:
+                score += 15
+                factors.append(f"Moderately obfuscated macro {macro.name} (score: {macro.obfuscation_score}/10)")
+
+            # Complexity scoring
+            if macro.complexity_score > 7:
+                score += 10
+                factors.append(f"Highly complex macro {macro.name} (complexity: {macro.complexity_score}/10)")
+
+            # Suspicious APIs with enhanced scoring
+            if macro.suspicious_apis:
+                api_score = min(len(macro.suspicious_apis) * 3, 20)
+                score += api_score
+                factors.append(f"{len(macro.suspicious_apis)} suspicious APIs in {macro.name}")
+
+                for api in macro.suspicious_apis:
+                    iocs.append(
+                        IoC(
+                            ioc_type="api_call",
+                            value=api,
+                            description=f"Suspicious API call in macro {macro.name}",
+                            confidence=0.8,
+                        )
+                    )
+
+            # Obfuscation techniques scoring
+            if macro.obfuscation_techniques:
+                tech_score = min(len(macro.obfuscation_techniques) * 4, 20)
+                score += tech_score
+                factors.append(f"Obfuscation techniques in {macro.name}: {', '.join(macro.obfuscation_techniques[:3])}")
+
+            # Suspicious strings
+            if macro.suspicious_strings:
+                susp_score = min(len(macro.suspicious_strings) * 2, 15)
+                score += susp_score
+                factors.append(f"{len(macro.suspicious_strings)} suspicious strings in {macro.name}")
+
+                for susp_str in macro.suspicious_strings[:3]:  # Limit to avoid spam
+                    iocs.append(
+                        IoC(
+                            ioc_type="suspicious_string",
+                            value=susp_str[:100],  # Truncate long strings
+                            description=f"Suspicious string in macro {macro.name}",
+                            confidence=0.7,
+                        )
+                    )
+
+            # Hex and Base64 strings
+            if macro.hex_strings:
+                score += min(len(macro.hex_strings) * 2, 10)
+                factors.append(f"{len(macro.hex_strings)} hex strings in {macro.name}")
+
+            if macro.base64_strings:
+                score += min(len(macro.base64_strings) * 3, 15)
+                factors.append(f"{len(macro.base64_strings)} base64 strings in {macro.name}")
+
+            # Advanced techniques scoring
+            critical_techniques = ['process_injection', 'privilege_escalation', 'persistence', 'lateral_movement']
+            high_risk_techniques = ['dynamic_execution', 'anti_analysis', 'network_activity']
+            
+            for technique, detected in macro.techniques.items():
+                if detected:
+                    if technique in critical_techniques:
+                        score += 20
+                        factors.append(f"Critical technique detected in {macro.name}: {technique.replace('_', ' ')}")
+                    elif technique in high_risk_techniques:
+                        score += 15
+                        factors.append(f"High-risk technique detected in {macro.name}: {technique.replace('_', ' ')}")
+                    else:
+                        score += 5
+
+            # Deobfuscated payload analysis
+            if macro.deobfuscated_payload:
+                payload_lower = macro.deobfuscated_payload.lower()
+                
+                if "powershell" in payload_lower:
+                    score += 25
+                    factors.append(f"PowerShell execution detected in {macro.name}")
+                    iocs.append(
+                        IoC(
+                            ioc_type="powershell",
+                            value=macro.deobfuscated_payload[:200],
+                            description=f"PowerShell command in macro {macro.name}",
+                            confidence=0.9,
+                        )
+                    )
+                
+                if any(cmd in payload_lower for cmd in ["cmd.exe", "rundll32", "regsvr32", "mshta"]):
+                    score += 20
+                    factors.append(f"Command execution detected in {macro.name}")
+                
+                if "http" in payload_lower:
+                    score += 15
+                    factors.append(f"Network communication detected in {macro.name}")
+
+        return score, factors, iocs
 
     def _score_macros(self, result: AnalysisResult) -> tuple:
         """Score macro-related risks."""
