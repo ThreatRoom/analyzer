@@ -33,6 +33,7 @@ A comprehensive Python tool for analyzing Microsoft Office documents to detect m
 
 - **Flexible Output**:
   - Detailed text reports
+  - Professional HTML reports with styling
   - JSON format for programmatic use
   - Comprehensive IoC lists
 
@@ -71,11 +72,20 @@ python analyze_office.py document.docx
 ### Advanced Usage
 
 ```bash
+# Generate professional HTML report
+python analyze_office.py suspicious.xlsm --html-report report.html
+
 # Analyze with JSON output
 python analyze_office.py suspicious.xlsm --output-format json
 
+# Analyze with HTML output format (to stdout)
+python analyze_office.py suspicious.xlsm --output-format html
+
 # Save report to file
 python analyze_office.py presentation.pptx --output report.txt
+
+# Generate both text and HTML reports
+python analyze_office.py document.docx --output report.txt --html-report report.html
 
 # Disable network checks (offline mode)
 python analyze_office.py document.docm --no-network
@@ -94,12 +104,33 @@ options:
   -h, --help            Show help message and exit
   --output OUTPUT, -o OUTPUT
                         Output file path for the report (default: print to stdout)
-  --output-format {text,json}, -f {text,json}
+  --output-format {text,json,html}, -f {text,json,html}
                         Output format for the report (default: text)
+  --html-report FILE    Generate HTML report and save to specified file path
   --no-network          Disable network-based checks and reputation lookups
   --verbose, -v         Enable verbose output
   --version             Show program's version number and exit
 ```
+
+### HTML Reports
+
+The tool now supports generating professional HTML reports with:
+
+- **Modern Web Design**: Clean, responsive layout with professional styling
+- **Color-coded Threat Levels**: Visual indicators for risk assessment
+- **Interactive Elements**: Expandable sections and hover effects
+- **Mobile Responsive**: Works on all devices and screen sizes
+- **Comprehensive Sections**: All analysis data beautifully formatted
+- **Professional Appearance**: Suitable for executive briefings and formal reports
+
+HTML reports include all the same detailed analysis as text reports but with enhanced visual presentation:
+
+- Threat level banner with color coding
+- Organized information grids
+- Visual risk score indicators
+- Technique detection matrices
+- IoC tables with confidence bars
+- Professional footer with links
 
 ## Sample Output
 
