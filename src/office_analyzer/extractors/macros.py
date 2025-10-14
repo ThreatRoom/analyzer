@@ -6,7 +6,6 @@ import hashlib
 import re
 import base64
 from typing import List
-from pathlib import Path
 
 try:
     from oletools.olevba import VBA_Parser, TYPE_OLE, TYPE_OpenXML
@@ -18,7 +17,7 @@ except ImportError:
     TYPE_OpenXML = None
 
 from ..models import MacroInfo
-from ..utils import extract_strings, is_base64_string
+from ..utils import is_base64_string
 
 
 class MacroExtractor:
@@ -90,7 +89,7 @@ class MacroExtractor:
 
             vba_parser.close()
 
-        except Exception as e:
+        except Exception:
             # If oletools fails, try alternative extraction methods
             pass
 

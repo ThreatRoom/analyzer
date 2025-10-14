@@ -2,11 +2,9 @@
 Metadata extractor for Office documents.
 """
 
-import os
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 import xml.etree.ElementTree as ET
 
 try:
@@ -60,7 +58,7 @@ class MetadataExtractor:
             else:
                 self._extract_legacy_metadata(str(file_path), metadata)
 
-        except Exception as e:
+        except Exception:
             # If extraction fails, return basic metadata
             pass
 

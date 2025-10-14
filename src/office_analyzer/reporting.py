@@ -3,10 +3,9 @@ Comprehensive reporting module for Office file analysis results.
 """
 
 from datetime import datetime
-from typing import TextIO
 import json
 
-from .models import AnalysisResult, ThreatLevel
+from .models import AnalysisResult
 
 
 class ReportGenerator:

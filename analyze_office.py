@@ -31,7 +31,7 @@ Examples:
 
 Supported formats:
   Word: .docx, .docm, .dotx, .dotm, .doc, .dot
-  Excel: .xlsx, .xlsm, .xltx, .xltm, .xls, .xlt  
+  Excel: .xlsx, .xlsm, .xltx, .xltm, .xls, .xlt
   PowerPoint: .pptx, .pptm, .potx, .potm, .ppt, .pot
         """,
     )

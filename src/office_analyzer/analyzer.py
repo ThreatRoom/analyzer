@@ -2,12 +2,8 @@
 Main OfficeAnalyzer class for comprehensive Office file analysis.
 """
 
-import os
-import hashlib
-import math
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from .models import AnalysisResult, ThreatLevel, RiskScore, FileMetadata
 from .extractors import MetadataExtractor, MacroExtractor, NetworkExtractor, ObjectExtractor

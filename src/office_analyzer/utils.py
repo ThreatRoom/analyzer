@@ -4,7 +4,6 @@ Utility functions for Office file analysis.
 
 import hashlib
 import math
-from pathlib import Path
 from typing import Tuple
 
 
