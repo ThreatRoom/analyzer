@@ -93,7 +93,7 @@ class OfficeAnalyzer:
 
             # Extract OLE objects with enhanced analysis
             result.ole_objects = self.ole_extractor.extract_ole_objects(str(file_path))
-            
+
             # Extract macros with enhanced analysis (replaces basic macro extraction)
             enhanced_macros = self.ole_extractor.extract_enhanced_macros(str(file_path))
             if enhanced_macros:
@@ -101,7 +101,7 @@ class OfficeAnalyzer:
             else:
                 # Fallback to basic macro extraction
                 result.macros = self.macro_extractor.extract(str(file_path))
-            
+
             result.auto_execution = any(macro.auto_execution for macro in result.macros)
 
             # Extract network indicators

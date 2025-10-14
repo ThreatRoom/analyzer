@@ -241,9 +241,10 @@ class RiskScorer:
                 factors.append(f"{len(macro.base64_strings)} base64 strings in {macro.name}")
 
             # Advanced techniques scoring
-            critical_techniques = ['process_injection', 'privilege_escalation', 'persistence', 'lateral_movement']
+            critical_techniques = ['process_injection', 'privilege_escalation', 
+                                   'persistence', 'lateral_movement']
             high_risk_techniques = ['dynamic_execution', 'anti_analysis', 'network_activity']
-            
+
             for technique, detected in macro.techniques.items():
                 if detected:
                     if technique in critical_techniques:
@@ -258,7 +259,7 @@ class RiskScorer:
             # Deobfuscated payload analysis
             if macro.deobfuscated_payload:
                 payload_lower = macro.deobfuscated_payload.lower()
-                
+
                 if "powershell" in payload_lower:
                     score += 25
                     factors.append(f"PowerShell execution detected in {macro.name}")
@@ -270,11 +271,11 @@ class RiskScorer:
                             confidence=0.9,
                         )
                     )
-                
+
                 if any(cmd in payload_lower for cmd in ["cmd.exe", "rundll32", "regsvr32", "mshta"]):
                     score += 20
                     factors.append(f"Command execution detected in {macro.name}")
-                
+
                 if "http" in payload_lower:
                     score += 15
                     factors.append(f"Network communication detected in {macro.name}")

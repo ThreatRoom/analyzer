@@ -239,14 +239,14 @@ class ReportGenerator:
         lines = []
         lines.append("OLE OBJECTS ANALYSIS")
         lines.append("-" * 40)
-        
+
         if not result.ole_objects:
             lines.append("No OLE objects found.")
             return lines
-            
+
         lines.append(f"Total OLE Objects Found: {len(result.ole_objects)}")
         lines.append("")
-        
+
         # Group by object type
         ole_groups = {}
         for ole_obj in result.ole_objects:
@@ -254,7 +254,7 @@ class ReportGenerator:
             if obj_type not in ole_groups:
                 ole_groups[obj_type] = []
             ole_groups[obj_type].append(ole_obj)
-            
+
         for obj_type, objects in ole_groups.items():
             lines.append(f"{obj_type} Objects ({len(objects)}):")
             for ole_obj in objects:
@@ -269,13 +269,13 @@ class ReportGenerator:
                     lines.append("    📄 Contains Embedded File")
                 if ole_obj.hash_sha256:
                     lines.append(f"    SHA256: {ole_obj.hash_sha256}")
-                    
+
                 if ole_obj.suspicious_content:
                     lines.append("    🚨 Suspicious Content:")
                     for content in ole_obj.suspicious_content:
                         lines.append(f"      - {content}")
                 lines.append("")
-                
+
         return lines
 
     def _generate_enhanced_macro_section(self, result: AnalysisResult) -> list:
@@ -290,7 +290,7 @@ class ReportGenerator:
             lines.append(f"Lines of Code: {macro.line_count}")
             lines.append(f"Obfuscation Score: {macro.obfuscation_score}/10")
             lines.append(f"Complexity Score: {macro.complexity_score}/10")
-            
+
             # Risk indicators
             risk_level = "🔴 HIGH RISK" if macro.obfuscation_score >= 7 else \
                         "🟡 MEDIUM RISK" if macro.obfuscation_score >= 4 else \
@@ -335,7 +335,7 @@ class ReportGenerator:
                 if len(macro.hex_strings) > 3:
                     lines.append(f"  ... and {len(macro.hex_strings) - 3} more")
                 lines.append("")
-                
+
             if macro.base64_strings:
                 lines.append(f"📝 Base64 Strings Found: {len(macro.base64_strings)}")
                 for b64_str in macro.base64_strings[:3]:
@@ -348,14 +348,14 @@ class ReportGenerator:
             lines.append("🔬 Advanced Techniques Analysis:")
             critical_techniques = ['process_injection', 'privilege_escalation', 'persistence', 'lateral_movement']
             high_risk_techniques = ['dynamic_execution', 'anti_analysis', 'network_activity']
-            
+
             for technique, detected in macro.techniques.items():
                 if detected:
                     emoji = "🚨" if technique in critical_techniques else \
                            "⚠️" if technique in high_risk_techniques else "🔍"
                     technique_name = technique.replace("_", " ").title()
                     lines.append(f"  {emoji} {technique_name}: YES")
-                    
+
             lines.append("")
 
             # Deobfuscated payload

@@ -75,7 +75,7 @@ class EmbeddedObject:
 @dataclass
 class OLEObjectInfo:
     """Information about OLE objects found in Office files."""
-    
+
     section_id: str
     section_name: str
     section_size: int
